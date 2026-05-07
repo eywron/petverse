@@ -107,97 +107,167 @@ export default function PhaserGame() {
             }
 
             class PlayScene extends Phaser.Scene {
+                player!: Phaser.Physics.Arcade.Sprite;
                 pet!: Phaser.Physics.Arcade.Sprite;
                 stateText!: Phaser.GameObjects.Text;
-                
+                speechBubble!: Phaser.GameObjects.Container;
+                speechText!: Phaser.GameObjects.Text;
+                cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+                wasd!: any;
+                currentRoom: string = 'Bedroom';
+
                 constructor() { super({ key: 'PlayScene' }); }
 
                 create() {
-                    // Generate Environment using our procedural tiles
-                    for (let x = 0; x < 20; x++) {
-                        for (let y = 0; y < 15; y++) {
-                            this.add.image(x * 32, y * 32, 'tile_grass').setOrigin(0, 0);
-                        }
+                    // Controls
+                    if (this.input.keyboard) {
+                        this.cursors = this.input.keyboard.createCursorKeys();
+                        this.wasd = {
+                            up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+                            down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+                            left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+                            right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+                        };
                     }
 
-                    // Create Pet Sprite
-                    this.pet = this.physics.add.sprite(400, 300, 'pet_idle');
+                    this.drawRoom('Bedroom');
+
+                    // Player Avatar
+                    this.player = this.physics.add.sprite(400, 300, 'pet_idle').setTint(0x8888ff); // Distinguish player
+                    this.player.setCollideWorldBounds(true);
+
+                    // Pet Avatar
+                    this.pet = this.physics.add.sprite(450, 300, 'pet_idle');
                     this.pet.setCollideWorldBounds(true);
                     
                     // Procedural Animations
-                    this.anims.create({
-                        key: 'idle',
-                        frames: [ { key: 'pet_idle' } ],
-                        frameRate: 2,
-                        repeat: -1
-                    });
-                     this.anims.create({
-                        key: 'walk',
-                        frames: [ { key: 'pet_idle' }, { key: 'pet_walk' } ],
-                        frameRate: 6,
-                        repeat: -1
-                    });
-                    this.anims.create({
-                        key: 'sleep',
-                        frames: [ { key: 'pet_sleep' } ],
-                        frameRate: 1,
-                        repeat: -1
-                    });
+                    if (!this.anims.exists('idle')) {
+                        this.anims.create({ key: 'idle', frames: [ { key: 'pet_idle' } ], frameRate: 2, repeat: -1 });
+                        this.anims.create({ key: 'walk', frames: [ { key: 'pet_idle' }, { key: 'pet_walk' } ], frameRate: 6, repeat: -1 });
+                        this.anims.create({ key: 'sleep', frames: [ { key: 'pet_sleep' } ], frameRate: 1, repeat: -1 });
+                    }
 
+                    this.player.play('idle');
                     this.pet.play('idle');
 
-                    // Name plate / State text
-                    this.stateText = this.add.text(400, 270, 'Wandering', { 
-                        fontFamily: 'monospace', 
-                        fontSize: '12px', 
-                        color: '#ffffff',
-                        backgroundColor: '#00000088'
+                    // Name plates
+                    this.stateText = this.add.text(0, 0, 'Pet', { 
+                        fontFamily: 'monospace', fontSize: '10px', color: '#ffffff', backgroundColor: '#000000aa'
                     }).setOrigin(0.5);
 
+                    // Speech Bubble System
+                    this.createSpeechBubble();
+
                     // Camera follow
-                    this.cameras.main.startFollow(this.pet, true, 0.05, 0.05);
+                    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
                     this.cameras.main.setZoom(1.5);
 
-                    // Autonomous Behavior Loop
+                    // Autonomous Behavior Timer
                     this.time.addEvent({
-                        delay: 2000,
+                        delay: 3000,
                         callback: this.evaluateAIBehavior,
                         callbackScope: this,
                         loop: true
                     });
                 }
 
-                evaluateAIBehavior() {
-                    const rnd = Phaser.Math.Between(0, 100);
+                drawRoom(roomName: string) {
+                    this.currentRoom = roomName;
+                    // Simple bounds for small rooms
+                    this.physics.world.setBounds(0, 0, 800, 600);
                     
-                    if (rnd < 30) {
-                        // Idle
-                        this.pet.setVelocity(0, 0);
-                        this.pet.play('idle', true);
-                        this.stateText.setText('Idle');
-                    } else if (rnd < 40) {
-                        // Sleep
-                        this.pet.setVelocity(0, 0);
-                        this.pet.play('sleep', true);
-                        this.stateText.setText('Zzz...');
-                    } else {
-                        // Wander
-                        const speed = 40;
-                        const vx = Phaser.Math.Between(-speed, speed);
-                        const vy = Phaser.Math.Between(-speed, speed);
-                        this.pet.setVelocity(vx, vy);
-                        
-                        if (vx < 0) this.pet.setFlipX(true);
-                        else if (vx > 0) this.pet.setFlipX(false);
-                        
+                    // Generate Environment based on room
+                    const tint = roomName === 'Park' ? 0xffffff : (roomName === 'Bedroom' ? 0xddddff : 0xddffdd);
+                    for (let x = 0; x < 25; x++) {
+                        for (let y = 0; y < 19; y++) {
+                            this.add.image(x * 32, y * 32, 'tile_grass').setOrigin(0, 0).setTint(tint);
+                        }
+                    }
+                }
+
+                createSpeechBubble() {
+                    this.speechBubble = this.add.container(0, 0);
+                    const bg = this.add.graphics();
+                    bg.fillStyle(0xffffff, 1);
+                    bg.fillRoundedRect(-50, -30, 100, 40, 8);
+                    
+                    // Tail
+                    bg.fillTriangle(0, 10, -5, 20, 5, 10);
+                    
+                    this.speechText = this.add.text(0, -10, 'Woof!', {
+                        fontFamily: 'monospace', fontSize: '10px', color: '#000000', align: 'center', wordWrap: { width: 90 }
+                    }).setOrigin(0.5);
+                    
+                    this.speechBubble.add([bg, this.speechText]);
+                    this.speechBubble.setAlpha(0);
+                }
+
+                showSpeech(text: string) {
+                    this.speechText.setText(text);
+                    this.tweens.add({
+                        targets: this.speechBubble,
+                        alpha: 1, y: -40, duration: 200, ease: 'Bounce.Out',
+                        onComplete: () => {
+                            this.time.delayedCall(3000, () => {
+                                this.tweens.add({ targets: this.speechBubble, alpha: 0, duration: 300 });
+                            });
+                        }
+                    });
+                }
+
+                evaluateAIBehavior() {
+                    const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pet.x, this.pet.y);
+                    
+                    // If far away, follow player
+                    if (dist > 100) {
+                        this.physics.moveToObject(this.pet, this.player, 60);
                         this.pet.play('walk', true);
-                        this.stateText.setText('Walking');
+                        this.pet.setFlipX(this.pet.body!.velocity.x < 0);
+                    } else {
+                        // Wander or Idle
+                        const rnd = Phaser.Math.Between(0, 100);
+                        if (rnd < 40) {
+                            this.pet.setVelocity(0, 0);
+                            this.pet.play('idle', true);
+                            if (rnd < 10) this.showSpeech("💭 I love you!");
+                        } else if (rnd < 80) {
+                            const vx = Phaser.Math.Between(-30, 30);
+                            const vy = Phaser.Math.Between(-30, 30);
+                            this.pet.setVelocity(vx, vy);
+                            this.pet.play('walk', true);
+                            this.pet.setFlipX(vx < 0);
+                        } else {
+                            this.pet.setVelocity(0, 0);
+                            this.pet.play('sleep', true);
+                        }
                     }
                 }
 
                 update() {
-                    // Lock text above pet
-                    this.stateText.setPosition(this.pet.x, this.pet.y - 25);
+                    // Player Movement
+                    let vx = 0;
+                    let vy = 0;
+                    const speed = 100;
+
+                    if (this.cursors.left.isDown || this.wasd.left.isDown) vx = -speed;
+                    else if (this.cursors.right.isDown || this.wasd.right.isDown) vx = speed;
+
+                    if (this.cursors.up.isDown || this.wasd.up.isDown) vy = -speed;
+                    else if (this.cursors.down.isDown || this.wasd.down.isDown) vy = speed;
+
+                    this.player.setVelocity(vx, vy);
+
+                    if (vx !== 0 || vy !== 0) {
+                        this.player.play('walk', true);
+                        if (vx < 0) this.player.setFlipX(true);
+                        else if (vx > 0) this.player.setFlipX(false);
+                    } else {
+                        this.player.play('idle', true);
+                    }
+
+                    // Lock UI elements to pet
+                    this.stateText.setPosition(this.pet.x, this.pet.y + 20);
+                    this.speechBubble.setPosition(this.pet.x, this.pet.y - 20);
                 }
             }
 

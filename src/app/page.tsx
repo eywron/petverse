@@ -6,6 +6,7 @@ import PetDisplay from "@/components/game/PetDisplay";
 import ActionMenu from "@/components/game/ActionMenu";
 import StatsSidebar from "@/components/game/StatsSidebar";
 import CatchGame from "@/components/minigames/CatchGame";
+import AIChat from "@/components/game/AIChat";
 
 export default function Home() {
   const { setPet, completeMinigame } = useGameStore();
@@ -68,27 +69,7 @@ export default function Home() {
             {activeTab === 'hub' ? (
               <>
                 <ActionMenu />
-                
-                {/* AI Comm Window Container */}
-                <div className="mt-6 bg-gray-900 rounded-2xl p-6 border border-gray-800">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-xl">🤖</span>
-                    <h3 className="font-bold text-white text-lg">AI Persona Engine</h3>
-                  </div>
-                  <div className="bg-gray-800 rounded-xl p-4 min-h-[100px] flex items-center">
-                    <p className="text-gray-400 italic">"I'm feeling pretty good today! Do you want to play a game?"</p>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Talk to your pet..." 
-                      className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
-                    />
-                    <button className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                      Send
-                    </button>
-                  </div>
-                </div>
+                <AIChat />
               </>
             ) : (
               <CatchGame onComplete={(score) => {

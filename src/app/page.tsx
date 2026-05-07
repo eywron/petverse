@@ -9,6 +9,7 @@ import CatchGame from "@/components/minigames/CatchGame";
 import AIChat from "@/components/game/AIChat";
 import WorldNavigation from "@/components/game/WorldNavigation";
 import InteractiveRoom from "@/components/game/InteractiveRoom";
+import SocialPanel from "@/components/social/SocialPanel";
 
 export default function Home() {
   const { setPet, completeMinigame } = useGameStore();
@@ -82,8 +83,9 @@ export default function Home() {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 flex flex-col gap-8">
             <StatsSidebar />
+            <SocialPanel />
           </div>
         </div>
       </div>

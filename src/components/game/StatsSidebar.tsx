@@ -12,7 +12,7 @@ function StatBar({ label, value, color }: { label: string, value: number, color:
             <div className="h-3 w-full bg-gray-800 rounded-full overflow-hidden shadow-inner">
                 <div 
                     className={`h-full ${color} transition-all duration-500 ease-out`} 
-                    style={{ width: \`\${value}%\` }}
+                    style={{ width: `${value}%` }}
                 ></div>
             </div>
         </div>

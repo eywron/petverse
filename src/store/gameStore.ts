@@ -6,6 +6,7 @@ export type Location = 'bedroom' | 'kitchen' | 'bathroom' | 'school' | 'park';
 export interface Pet {
   id: string;
   name: string;
+  species: string;
   hunger: number;
   energy: number;
   happiness: number;

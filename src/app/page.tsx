@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useGameStore } from "@/store/gameStore";
-import PetDisplay from "@/components/game/PetDisplay";
-import ActionMenu from "@/components/game/ActionMenu";
 import StatsSidebar from "@/components/game/StatsSidebar";
 import CatchGame from "@/components/minigames/CatchGame";
 import AIChat from "@/components/game/AIChat";

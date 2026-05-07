@@ -90,7 +90,7 @@ export default function CatchGame({ onComplete }: { onComplete: (score: number) 
                         {items.map((item) => (
                             <motion.div
                                 key={item.id}
-                                initial={{ top: "-10%", left: \`\${item.x}%\` }}
+                                initial={{ top: "-10%", left: `${item.x}%` }}
                                 animate={{ top: "110%" }}
                                 exit={{ opacity: 0, scale: 0 }}
                                 transition={{ duration: 3, ease: "linear" }}
@@ -99,7 +99,7 @@ export default function CatchGame({ onComplete }: { onComplete: (score: number) 
                                 }}
                                 onClick={() => handleCatch(item.id, item.type)}
                                 className="absolute text-4xl hover:scale-125 transition-transform"
-                                style={{ left: \`\${item.x}%\` }}
+                                style={{ left: `${item.x}%` }}
                             >
                                 {item.type === 'treat' ? '🍖' : '💣'}
                             </motion.div>

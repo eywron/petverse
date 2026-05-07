@@ -97,7 +97,7 @@ export default function InteractiveRoom() {
                 <motion.div
                     className="absolute ml-[-4rem] mt-[-4rem] flex flex-col items-center justify-center pointer-events-none drop-shadow-2xl"
                     initial={{ left: "50%", top: "50%" }}
-                    animate={{ left: \`\${petPosition.x}%\`, top: \`\${petPosition.y}%\` }}
+                    animate={{ left: `${petPosition.x}%`, top: `${petPosition.y}%` }}
                     transition={{ type: "spring", stiffness: 100, damping: 15 }}
                 >
                     {/* Pet Status Label Bubble */}

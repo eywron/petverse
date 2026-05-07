@@ -59,7 +59,18 @@ export default function PhaserGame() {
                         'C': 0xffff00, // Yellow
                     };
 
-                    // Pet Animations
+                    // Player Animations (Human)
+                    const humanIdle = [
+                        "  OOOO  ", " OWXXWO ", " OWWLLO ", "  OLLO  ", " OBBBBO ", "  O  O  ", "  O  O  ", " OOO OOO"
+                    ];
+                    makeFrame('player_idle', humanIdle, pal);
+                    
+                    const humanWalk = [
+                        "  OOOO  ", " OWXXWO ", " OWWLLO ", "  OLLO  ", " OBBBBO ", "  O  O  ", " OOO  O ", "    OOO "
+                    ];
+                    makeFrame('player_walk', humanWalk, pal);
+
+                    // Expanded Pet Animations
                     const petIdle1 = [
                         "  OOOO  ", " OLLLLO ", " OWWLLO ", "OWOOWLOO", "OWOOWLOO", "OLLLLLLO", " OLLLLO ", "  OOOO  "
                     ];
@@ -69,6 +80,21 @@ export default function PhaserGame() {
                         "  OOOO  ", " OLLLLO ", " OWWLLO ", "OWOOWLOO", "OWOOWLOO", "OLLLLLLO", " OLLLLO ", "  O  O  "
                     ];
                     makeFrame('pet_walk', petWalk, pal);
+
+                    const petJump = [
+                        "        ", "  OOOO  ", " OLLLLO ", " OWWLLO ", "OWOOWLOO", "OLLLLLLO", "  O  O  ", "        "
+                    ];
+                    makeFrame('pet_jump', petJump, pal);
+                    
+                    const petEat = [
+                        "        ", "        ", "  OOOO  ", " OLLLLO ", "OWWLLO  ", "OWLLLO  ", "OLLLO   ", " OOOOO  "
+                    ];
+                    makeFrame('pet_eat', petEat, pal);
+
+                    const petSad = [
+                        "  OOOO  ", " OLLLLO ", " OZZLLO ", "OWOOWLOO", "OWOOWLOO", "OLLLLLLO", " OLLLLO ", "  OOOO  "
+                    ];
+                    makeFrame('pet_sad', petSad, pal);
                     
                     const petSleep = [
                         "        ", "        ", "  OOOO  ", " OLLLLO ", " O----O ", "OLLLLLLO", " OLLLLO ", "  OOOO  "
@@ -110,6 +136,17 @@ export default function PhaserGame() {
                         "        ", "        ", "        ", "  OOOO  ", " OWWXXO ", " OBBXXO ", "  OOOO  ", "        "
                     ];
                     makeFrame('obj_bowl', bowlObj, pal);
+
+                    const showerObj = [
+                        " OXYYXO ", " OX  XO ", " OXYYXO ", "  X  X  ", "  X  X  ", " OXYYXO ", "OXXXXXXO", "OOOOOOOO"
+                    ];
+                    makeFrame('obj_shower', showerObj, pal);
+
+                    // Touch Button
+                    const dpadBtn = [
+                        " OOOOOO ", "OXXXXXXO", "OXWWWWXO", "OXWWWWXO", "OXWWWWXO", "OXWWWWXO", "OXXXXXXO", " OOOOOO "
+                    ];
+                    makeFrame('ui_btn', dpadBtn, pal);
                 }
             }
 
@@ -130,6 +167,9 @@ export default function PhaserGame() {
                 furniture!: Phaser.Physics.Arcade.StaticGroup;
                 floorTiles: Phaser.GameObjects.Image[] = [];
 
+                // Mobile Controls
+                touchControls: { up: boolean, down: boolean, left: boolean, right: boolean, interact: boolean } = { up: false, down: false, left: false, right: false, interact: false };
+
                 constructor() { super({ key: 'PlayScene' }); }
 
                 create() {
@@ -137,6 +177,9 @@ export default function PhaserGame() {
                     this.walls = this.physics.add.staticGroup();
                     this.doors = this.physics.add.staticGroup();
                     this.furniture = this.physics.add.staticGroup();
+
+                    // Setup Mobile UI Overlay
+                    this.createMobileControls();
 
                     // Controls
                     if (this.input.keyboard) {
@@ -155,17 +198,28 @@ export default function PhaserGame() {
                         this.anims.create({ key: 'idle', frames: [ { key: 'pet_idle' } ], frameRate: 2, repeat: -1 });
                         this.anims.create({ key: 'walk', frames: [ { key: 'pet_idle' }, { key: 'pet_walk' } ], frameRate: 6, repeat: -1 });
                         this.anims.create({ key: 'sleep', frames: [ { key: 'pet_sleep' } ], frameRate: 1, repeat: -1 });
+                        this.anims.create({ key: 'jump', frames: [ { key: 'pet_jump' }, { key: 'pet_idle' } ], frameRate: 4, repeat: -1 });
+                        this.anims.create({ key: 'eat', frames: [ { key: 'pet_eat' }, { key: 'pet_idle' } ], frameRate: 5, repeat: -1 });
+                        this.anims.create({ key: 'sad', frames: [ { key: 'pet_sad' } ], frameRate: 2, repeat: -1 });
+                        
+                        this.anims.create({ key: 'player_idle', frames: [ { key: 'player_idle' } ], frameRate: 2, repeat: -1 });
+                        this.anims.create({ key: 'player_walk', frames: [ { key: 'player_idle' }, { key: 'player_walk' } ], frameRate: 6, repeat: -1 });
                     }
 
-                    // Player Avatar
-                    this.player = this.physics.add.sprite(200, 200, 'pet_idle').setTint(0x8888ff);
+                    // Player Avatar (Human)
+                    this.player = this.physics.add.sprite(200, 200, 'player_idle');
                     this.player.setCollideWorldBounds(true);
-                    this.player.play('idle');
+                    this.player.play('player_idle');
 
                     // Pet Avatar
                     this.pet = this.physics.add.sprite(250, 200, 'pet_idle');
                     this.pet.setCollideWorldBounds(true);
                     this.pet.play('idle');
+                    this.pet.setInteractive({ useHandCursor: true });
+                    this.pet.on('pointerdown', () => {
+                        this.pet.play('jump');
+                        this.showSpeech("💭 Yay! Pets!", 'exciting');
+                    });
                     
                     // Build Initial Map
                     this.drawRoom('Bedroom');
@@ -173,13 +227,21 @@ export default function PhaserGame() {
                     // Collision Rules
                     this.physics.add.collider(this.player, this.walls);
                     this.physics.add.collider(this.pet, this.walls);
-                    this.physics.add.collider(this.player, this.furniture);
+                    this.physics.add.collider(this.player, this.furniture, (p, f) => {
+                        const furn = f as Phaser.Physics.Arcade.Sprite;
+                        if ((this.wasd.space.isDown || this.touchControls.interact || Phaser.Input.Keyboard.JustDown(this.wasd.space)) && furn.texture.key === 'obj_bowl') {
+                            this.pet.setPosition(furn.x + 20, furn.y);
+                            this.pet.play('eat');
+                            this.showSpeech("💭 Yummy food!", 'happy');
+                        }
+                    });
                     this.physics.add.collider(this.pet, this.furniture);
                     
                     this.physics.add.overlap(this.player, this.doors, (p, d) => {
                         const door = d as any;
-                        if (this.wasd.space.isDown || Phaser.Input.Keyboard.JustDown(this.wasd.space)) {
+                        if (this.wasd.space.isDown || this.touchControls.interact || Phaser.Input.Keyboard.JustDown(this.wasd.space)) {
                             this.transitionRoom(door.targetRoom);
+                            this.touchControls.interact = false; // reset
                         }
                     });
 
@@ -206,6 +268,29 @@ export default function PhaserGame() {
                         callbackScope: this,
                         loop: true
                     });
+                }
+
+                createMobileControls() {
+                    const padding = 60;
+                    
+                    const createBtn = (x: number, y: number, key: keyof PlayScene['touchControls']) => {
+                        const btn = this.add.image(x, y, 'ui_btn').setInteractive().setScrollFactor(0).setAlpha(0.6).setScale(1.5);
+                        btn.on('pointerdown', () => { btn.setAlpha(1); this.touchControls[key] = true; });
+                        btn.on('pointerup', () => { btn.setAlpha(0.6); this.touchControls[key] = false; });
+                        btn.on('pointerout', () => { btn.setAlpha(0.6); this.touchControls[key] = false; });
+                        return btn;
+                    };
+
+                    const w = this.cameras.main.width;
+                    const h = this.cameras.main.height;
+
+                    createBtn(padding * 1.5, h - padding * 2.5, 'up');
+                    createBtn(padding * 1.5, h - padding * 0.5, 'down');
+                    createBtn(padding * 0.5, h - padding * 1.5, 'left');
+                    createBtn(padding * 2.5, h - padding * 1.5, 'right');
+
+                    const interactBtn = createBtn(w - padding * 1.5, h - padding * 1.5, 'interact');
+                    interactBtn.setTint(0xff8888);
                 }
 
                 transitionRoom(newRoom: string) {
@@ -271,6 +356,15 @@ export default function PhaserGame() {
 
                         const doorToPark = this.doors.create((width - 2) * 32, 1 * 32, 'tile_door') as any;
                         doorToPark.targetRoom = 'Park';
+
+                        const doorToBath = this.doors.create(5 * 32, 1 * 32, 'tile_door') as any;
+                        doorToBath.targetRoom = 'Bathroom';
+                    }
+                    else if (roomName === 'Bathroom') {
+                        bgTile = 'tile_floor';
+                        this.furniture.create(6 * 32, 2 * 32, 'obj_shower');
+                        const doorToKitchen = this.doors.create(1 * 32, (height - 2) * 32, 'tile_door') as any;
+                        doorToKitchen.targetRoom = 'Kitchen';
                     }
                     else if (roomName === 'Park') {
                         // Less walls in park, tree objects (using bed graphic colored differently for now)
@@ -384,22 +478,22 @@ export default function PhaserGame() {
                     // Player Movement
                     let vx = 0;
                     let vy = 0;
-                    const speed = 100;
+                    const speed = 120;
 
-                    if (this.cursors.left.isDown || this.wasd.left.isDown) vx = -speed;
-                    else if (this.cursors.right.isDown || this.wasd.right.isDown) vx = speed;
+                    if (this.cursors.left.isDown || this.wasd.left.isDown || this.touchControls.left) vx = -speed;
+                    else if (this.cursors.right.isDown || this.wasd.right.isDown || this.touchControls.right) vx = speed;
 
-                    if (this.cursors.up.isDown || this.wasd.up.isDown) vy = -speed;
-                    else if (this.cursors.down.isDown || this.wasd.down.isDown) vy = speed;
+                    if (this.cursors.up.isDown || this.wasd.up.isDown || this.touchControls.up) vy = -speed;
+                    else if (this.cursors.down.isDown || this.wasd.down.isDown || this.touchControls.down) vy = speed;
 
                     this.player.setVelocity(vx, vy);
 
                     if (vx !== 0 || vy !== 0) {
-                        this.player.play('walk', true);
+                        this.player.play('player_walk', true);
                         if (vx < 0) this.player.setFlipX(true);
                         else if (vx > 0) this.player.setFlipX(false);
                     } else {
-                        this.player.play('idle', true);
+                        this.player.play('player_idle', true);
                     }
 
                     // Lock UI elements to pet

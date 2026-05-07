@@ -151,7 +151,6 @@ export default function PhaserGame() {
             }
 
             class PlayScene extends Phaser.Scene {
-                player!: Phaser.Physics.Arcade.Sprite;
                 pet!: Phaser.Physics.Arcade.Sprite;
                 stateText!: Phaser.GameObjects.Text;
                 speechBubble!: Phaser.GameObjects.Container;
@@ -169,6 +168,9 @@ export default function PhaserGame() {
 
                 // Mobile Controls
                 touchControls: { up: boolean, down: boolean, left: boolean, right: boolean, interact: boolean } = { up: false, down: false, left: false, right: false, interact: false };
+                
+                // Track last movement for idle AI
+                lastMoveTime: number = 0;
 
                 constructor() { super({ key: 'PlayScene' }); }
 
@@ -201,18 +203,10 @@ export default function PhaserGame() {
                         this.anims.create({ key: 'jump', frames: [ { key: 'pet_jump' }, { key: 'pet_idle' } ], frameRate: 4, repeat: -1 });
                         this.anims.create({ key: 'eat', frames: [ { key: 'pet_eat' }, { key: 'pet_idle' } ], frameRate: 5, repeat: -1 });
                         this.anims.create({ key: 'sad', frames: [ { key: 'pet_sad' } ], frameRate: 2, repeat: -1 });
-                        
-                        this.anims.create({ key: 'player_idle', frames: [ { key: 'player_idle' } ], frameRate: 2, repeat: -1 });
-                        this.anims.create({ key: 'player_walk', frames: [ { key: 'player_idle' }, { key: 'player_walk' } ], frameRate: 6, repeat: -1 });
                     }
 
-                    // Player Avatar (Human)
-                    this.player = this.physics.add.sprite(200, 200, 'player_idle');
-                    this.player.setCollideWorldBounds(true);
-                    this.player.play('player_idle');
-
-                    // Pet Avatar
-                    this.pet = this.physics.add.sprite(250, 200, 'pet_idle');
+                    // Pet Avatar (Controlled by Player)
+                    this.pet = this.physics.add.sprite(400, 300, 'pet_idle');
                     this.pet.setCollideWorldBounds(true);
                     this.pet.play('idle');
                     this.pet.setInteractive({ useHandCursor: true });
@@ -225,23 +219,24 @@ export default function PhaserGame() {
                     this.drawRoom('Bedroom');
 
                     // Collision Rules
-                    this.physics.add.collider(this.player, this.walls);
                     this.physics.add.collider(this.pet, this.walls);
-                    this.physics.add.collider(this.player, this.furniture, (p, f) => {
+                    this.physics.add.collider(this.pet, this.furniture, (p, f) => {
                         const furn = f as Phaser.Physics.Arcade.Sprite;
                         if ((this.wasd.space.isDown || this.touchControls.interact || Phaser.Input.Keyboard.JustDown(this.wasd.space)) && furn.texture.key === 'obj_bowl') {
+                            this.pet.setVelocity(0,0);
                             this.pet.setPosition(furn.x + 20, furn.y);
                             this.pet.play('eat');
                             this.showSpeech("💭 Yummy food!", 'happy');
+                            this.lastMoveTime = this.time.now; // prevent idle override
                         }
                     });
-                    this.physics.add.collider(this.pet, this.furniture);
                     
-                    this.physics.add.overlap(this.player, this.doors, (p, d) => {
+                    this.physics.add.overlap(this.pet, this.doors, (p, d) => {
                         const door = d as any;
                         if (this.wasd.space.isDown || this.touchControls.interact || Phaser.Input.Keyboard.JustDown(this.wasd.space)) {
                             this.transitionRoom(door.targetRoom);
                             this.touchControls.interact = false; // reset
+                            this.pet.setVelocity(0, 0); // Stop moving through the door continuously
                         }
                     });
 
@@ -258,12 +253,12 @@ export default function PhaserGame() {
                     this.createSpeechBubble();
 
                     // Camera follow
-                    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+                    this.cameras.main.startFollow(this.pet, true, 0.1, 0.1);
                     this.cameras.main.setZoom(1.5);
 
                     // Autonomous Behavior Timer
                     this.time.addEvent({
-                        delay: 3000,
+                        delay: 5000,
                         callback: this.evaluateAIBehavior,
                         callbackScope: this,
                         loop: true
@@ -298,7 +293,6 @@ export default function PhaserGame() {
                     this.cameras.main.flash(300, 0, 0, 0);
                     this.drawRoom(newRoom);
                     // Reset positions
-                    this.player.setPosition(200, 200);
                     this.pet.setPosition(250, 200);
                     this.roomLabel.setText(newRoom);
                 }
@@ -435,47 +429,35 @@ export default function PhaserGame() {
                 }
 
                 evaluateAIBehavior() {
-                    const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.pet.x, this.pet.y);
+                    // Only run autonomous behavior if the player hasn't moved the pet recently
+                    if (this.time.now - this.lastMoveTime < 3000) return;
                     
-                    // If far away, follow player
-                    if (dist > 120) {
-                        this.physics.moveToObject(this.pet, this.player, 60);
-                        this.pet.play('walk', true);
-                        this.pet.setFlipX(this.pet.body!.velocity.x < 0);
-                    } else {
-                        // Wander or Interact based on room
-                        const rnd = Phaser.Math.Between(0, 100);
-                        if (rnd < 40) {
+                    const rnd = Phaser.Math.Between(0, 100);
+                    
+                    if (rnd < 40) {
+                        this.pet.setVelocity(0, 0);
+                        this.pet.play('idle', true);
+                        
+                        // Contextual Dialogue
+                        if (rnd < 20) {
+                            if (this.currentRoom === 'Bedroom') this.showSpeech("💭 I'm sleepy...", 'weak');
+                            else if (this.currentRoom === 'Kitchen') this.showSpeech("💭 Hungry!", 'excited');
+                            else if (this.currentRoom === 'Park') this.showSpeech("💭 Beautiful day!", 'happy');
+                            else if (this.currentRoom === 'Bathroom') this.showSpeech("💭 Squeaky clean!", 'normal');
+                            else this.showSpeech("💭 I love you!", 'normal');
+                        }
+                    } else if (rnd < 60) {
+                        if (this.currentRoom === 'Bedroom') {
                             this.pet.setVelocity(0, 0);
-                            this.pet.play('idle', true);
-                            
-                            // Contextual Dialogue
-                            if (rnd < 15) {
-                                if (this.currentRoom === 'Bedroom') this.showSpeech("💭 I'm sleepy...", 'weak');
-                                else if (this.currentRoom === 'Kitchen') this.showSpeech("💭 Hungry!", 'excited');
-                                else if (this.currentRoom === 'Park') this.showSpeech("💭 Let's play!!", 'happy');
-                                else this.showSpeech("💭 I love you!", 'normal');
-                            }
-                        } else if (rnd < 70) {
-                            const vx = Phaser.Math.Between(-40, 40);
-                            const vy = Phaser.Math.Between(-40, 40);
-                            this.pet.setVelocity(vx, vy);
-                            this.pet.play('walk', true);
-                            this.pet.setFlipX(vx < 0);
+                            this.pet.play('sleep', true);
                         } else {
-                            if (this.currentRoom === 'Bedroom') {
-                                this.pet.setVelocity(0, 0);
-                                this.pet.play('sleep', true);
-                            } else {
-                                this.pet.setVelocity(0, 0);
-                                this.pet.play('idle', true);
-                            }
+                            this.pet.play('idle', true);
                         }
                     }
                 }
 
                 update() {
-                    // Player Movement
+                    // Pet Movement (User Controlled)
                     let vx = 0;
                     let vy = 0;
                     const speed = 120;
@@ -486,14 +468,18 @@ export default function PhaserGame() {
                     if (this.cursors.up.isDown || this.wasd.up.isDown || this.touchControls.up) vy = -speed;
                     else if (this.cursors.down.isDown || this.wasd.down.isDown || this.touchControls.down) vy = speed;
 
-                    this.player.setVelocity(vx, vy);
+                    this.pet.setVelocity(vx, vy);
 
                     if (vx !== 0 || vy !== 0) {
-                        this.player.play('player_walk', true);
-                        if (vx < 0) this.player.setFlipX(true);
-                        else if (vx > 0) this.player.setFlipX(false);
-                    } else {
-                        this.player.play('player_idle', true);
+                        this.pet.play('walk', true);
+                        if (vx < 0) this.pet.setFlipX(true);
+                        else if (vx > 0) this.pet.setFlipX(false);
+                        this.lastMoveTime = this.time.now;
+                    } else if (this.time.now - this.lastMoveTime < 1000) {
+                        // Only auto-idle if not already playing a special animation recently
+                        if (this.pet.anims.currentAnim?.key !== 'eat' && this.pet.anims.currentAnim?.key !== 'jump') {
+                            this.pet.play('idle', true);
+                        }
                     }
 
                     // Lock UI elements to pet

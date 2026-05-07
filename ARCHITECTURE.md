@@ -6,7 +6,7 @@
 - **Styling**: Tailwind CSS, Framer Motion (UI/Pet animations)
 - **State Management**: Zustand (Client-side game state, sync with server)
 - **Backend/Database**: Supabase (PostgreSQL, Auth, Realtime, REST/GraphQL)
-- **AI Engine**: OpenAI (GPT-4o or similar) - exclusively for personality, dialogue, and emotional mapping based on DB state.
+- **AI Engine**: Google Gemini (Gemini 1.5 Pro/Flash) - exclusively for personality, dialogue, and emotional mapping based on DB state.
 - **Hosting/Deployment**: Vercel
 
 ## 2. Infrastructure & Data Flow Rules
@@ -54,7 +54,7 @@ When a user opens the app or views a pet, `getServerSideProps` / Server Actions 
 
 ### 4.3 AI Personality Injection Layer
 **Trigger**: When user talks to pet, or randomly every X minutes.
-**Context payload sent to OpenAI:**
+**Context payload sent to Gemini:**
 ```json
 {
   "pet_name": "Luna",
@@ -72,3 +72,26 @@ cron job (e.g., via Supabase pg_cron or Vercel trigger):
 1. Query pets where `hunger < 10` or `state = 'critical'` and `notified = false`.
 2. Find `friendships` for the `owner_id`.
 3. Insert into `notifications` (or trigger Push) to friends: "Luna needs urgent care!"
+
+---
+
+## 5. Economy & Expansion Systems (Part 2)
+
+### 5.1 Marketplace & Economy
+Global, server-authoritative trading economy.
+- **`items` Catalog**: Stores base templates of all droppable and craftable items. Defines properties like rarity (`common`, `rare`, `mythic`).
+- **`inventory`**: Maps physical items to users. Protected by Row Level Security (RLS). Users can only interact with inventory via verified API routes.
+- **`marketplace_listings`**: The auction house. Players list items for `coins`. Fully transactional: when a user buys, money is deducted, and inventory is transferred in a single PostgreSQL atomic transaction.
+
+### 5.2 Server-Authoritative Random Loot & Anti-Cheat
+Loot drops or minigame resolutions NEVER trust the client.
+Calculations are executed securely in `src/lib/game-engine/LootSystem.ts` or on standard backend API routes (`src/app/api/minigames/finish`).
+- Client passes `score` and `timeElapsed`.
+- Server validates that `score` is mathematically possible within `timeElapsed`.
+- If valid, the server references the loot tables, rolls utilizing any active `world_events` multipliers, and commits rewards to the database.
+
+### 5.3 Global World Events
+Live events sync across all clients simultaneously via Supabase Realtime.
+- `world_events` table dictates active multipliers (e.g., Double XP Weekend).
+- Front-end fetches the current active event manifest and adapts UI styling (e.g., Meteors in the sky, special music).
+- Pet's AI Personality Prompt is injected with the current active event: `{"active_event": "Meteor Shower"}` so the pet reacts to it autonomously natively in conversation.

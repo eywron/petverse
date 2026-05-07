@@ -7,6 +7,8 @@ import ActionMenu from "@/components/game/ActionMenu";
 import StatsSidebar from "@/components/game/StatsSidebar";
 import CatchGame from "@/components/minigames/CatchGame";
 import AIChat from "@/components/game/AIChat";
+import WorldNavigation from "@/components/game/WorldNavigation";
+import InteractiveRoom from "@/components/game/InteractiveRoom";
 
 export default function Home() {
   const { setPet, completeMinigame } = useGameStore();
@@ -64,11 +66,11 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Game Area */}
           <div className="lg:col-span-2 flex flex-col">
-            <PetDisplay />
+            <WorldNavigation />
             
             {activeTab === 'hub' ? (
               <>
-                <ActionMenu />
+                <InteractiveRoom />
                 <AIChat />
               </>
             ) : (

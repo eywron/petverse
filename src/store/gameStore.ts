@@ -23,6 +23,7 @@ interface GameState {
   updatePetStats: (updates: Partial<Pet>) => void;
   feedPet: (foodValue: number) => void;
   playWithPet: (happinessValue: number) => void;
+  completeMinigame: (score: number) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -49,5 +50,14 @@ export const useGameStore = create<GameState>((set) => ({
     const newEnergy = Math.max(0, state.currentPet.energy - 10);
     // TODO: Send to Supabase
     return { currentPet: { ...state.currentPet, happiness: newHappiness, energy: newEnergy } };
+  }),
+
+  // Add minigame completion handler
+  completeMinigame: (score: number) => set((state) => {
+    if (!state.currentPet) return state;
+    const newHappiness = Math.min(100, state.currentPet.happiness + Math.floor(score / 5));
+    const newXp = state.currentPet.xp + score;
+    // TODO: Send to Supabase API for validation and Loot drop mapping
+    return { currentPet: { ...state.currentPet, happiness: newHappiness, xp: newXp } };
   }),
 }));

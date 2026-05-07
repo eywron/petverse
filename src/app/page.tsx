@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useGameStore } from "@/store/gameStore";
 import PetDisplay from "@/components/game/PetDisplay";
 import ActionMenu from "@/components/game/ActionMenu";
 import StatsSidebar from "@/components/game/StatsSidebar";
+import CatchGame from "@/components/minigames/CatchGame";
 
 export default function Home() {
-  const { setPet } = useGameStore();
+  const { setPet, completeMinigame } = useGameStore();
+  const [activeTab, setActiveTab] = useState<'hub' | 'minigames'>('hub');
 
   // Mock initial load (normally fetches from Supabase using user auth)
   useEffect(() => {
@@ -34,6 +36,22 @@ export default function Home() {
           <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-500">
             🐾 PetVerse
           </h1>
+          
+          <div className="flex bg-gray-900 rounded-full p-1 border border-gray-800 mr-auto ml-8">
+            <button 
+              onClick={() => setActiveTab('hub')}
+              className={`px-4 py-1 rounded-full text-sm font-bold transition-colors ${activeTab === 'hub' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              🏠 Hub
+            </button>
+            <button 
+              onClick={() => setActiveTab('minigames')}
+              className={`px-4 py-1 rounded-full text-sm font-bold transition-colors ${activeTab === 'minigames' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              🎮 Games
+            </button>
+          </div>
+
           <div className="flex items-center gap-4 bg-gray-900 rounded-full px-4 py-2 border border-gray-800">
             <span className="text-amber-400 font-bold">💰 1,250</span>
             <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden border-2 border-white/10 text-center text-sm leading-8">
@@ -46,28 +64,38 @@ export default function Home() {
           {/* Main Game Area */}
           <div className="lg:col-span-2 flex flex-col">
             <PetDisplay />
-            <ActionMenu />
             
-            {/* AI Comm Window Container */}
-            <div className="mt-6 bg-gray-900 rounded-2xl p-6 border border-gray-800">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xl">🤖</span>
-                <h3 className="font-bold text-white text-lg">AI Persona Engine</h3>
-              </div>
-              <div className="bg-gray-800 rounded-xl p-4 min-h-[100px] flex items-center">
-                <p className="text-gray-400 italic">"I'm feeling pretty good today! Do you want to play a game?"</p>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Talk to your pet..." 
-                  className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
-                />
-                <button className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                  Send
-                </button>
-              </div>
-            </div>
+            {activeTab === 'hub' ? (
+              <>
+                <ActionMenu />
+                
+                {/* AI Comm Window Container */}
+                <div className="mt-6 bg-gray-900 rounded-2xl p-6 border border-gray-800">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-xl">🤖</span>
+                    <h3 className="font-bold text-white text-lg">AI Persona Engine</h3>
+                  </div>
+                  <div className="bg-gray-800 rounded-xl p-4 min-h-[100px] flex items-center">
+                    <p className="text-gray-400 italic">"I'm feeling pretty good today! Do you want to play a game?"</p>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Talk to your pet..." 
+                      className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500"
+                    />
+                    <button className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <CatchGame onComplete={(score) => {
+                completeMinigame(score);
+                // Optionally show a toast here
+              }} />
+            )}
           </div>
 
           {/* Sidebar */}

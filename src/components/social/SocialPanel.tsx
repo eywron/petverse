@@ -5,12 +5,10 @@ import { useGameStore, Pet } from "@/store/gameStore";
 
 export default function SocialPanel() {
     const { currentPet } = useGameStore();
-    const [friends] = useState([
-        { id: "f1", name: "Alex", petName: "Rex", state: "normal", needsHelp: false },
-        { id: "f2", name: "Sarah", petName: "Bella", state: "critical", needsHelp: true },
-    ]);
+    // Real multiplayer friends list will be fetched from Supabase
+    const [friends, setFriends] = useState<{id: string; name: string; petName: string; state: string; needsHelp: boolean}[]>([]);
 
-    const handleHelpFriend = (friendName: string, petName: string) => {
+    const handleHelpFriend = async (friendName: string, petName: string) => {
         alert(`You sent emergency food to ${friendName}'s pet, ${petName}! +50 Coins earned.`);
         // In a real app, this would trigger a Supabase RPC to update the friend's pet and grant rewards
     };

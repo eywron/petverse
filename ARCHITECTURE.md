@@ -3,8 +3,9 @@
 ## 1. Core Technology Stack
 - **Frontend Framework**: Next.js 14+ (App Router, Server Actions)
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS, Framer Motion (UI/Pet animations)
-- **State Management**: Zustand (Client-side game state, sync with server)
+- **Game Engine**: Phaser.js (Tilemaps, Sprite Physics, Pet Logic)
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand (UI state, sync with Supabase)
 - **Backend/Database**: Supabase (PostgreSQL, Auth, Realtime, REST/GraphQL)
 - **AI Engine**: Google Gemini (Gemini 1.5 Pro/Flash) - exclusively for personality, dialogue, and emotional mapping based on DB state.
 - **Hosting/Deployment**: Vercel

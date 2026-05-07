@@ -6,7 +6,7 @@ import StatsSidebar from "@/components/game/StatsSidebar";
 import CatchGame from "@/components/minigames/CatchGame";
 import AIChat from "@/components/game/AIChat";
 import WorldNavigation from "@/components/game/WorldNavigation";
-import InteractiveRoom from "@/components/game/InteractiveRoom";
+import PhaserGame from "@/components/game/PhaserGame";
 import SocialPanel from "@/components/social/SocialPanel";
 
 export default function Home() {
@@ -69,7 +69,7 @@ export default function Home() {
             
             {activeTab === 'hub' ? (
               <>
-                <InteractiveRoom />
+                <PhaserGame />
                 <AIChat />
               </>
             ) : (
